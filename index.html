@@ -277,7 +277,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCJz4TWJGTd92iq5ji_j91h3z1a48mHh4z4Un45LX4IuJ8Z2FBeI3ebZdo-ZnC0nSV/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIhg1wh-vFwngeYQ7fVJungR5WHBwQQKBQIyrCoAdTJg2eLQZpTy_1aTKSLFQQuiPg/exec';
 
 let entries = [];
 let selectedHandover = '';
@@ -354,12 +354,18 @@ async function addEntry() {
   };
 
   try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    const params = new URLSearchParams({
+      action: 'write',
+      sn: payload.sn,
+      fileNo: payload.fileNo,
+      inDate: payload.inDate,
+      inTime: payload.inTime,
+      handover: payload.handover,
+      outDate: payload.outDate,
+      outTime: payload.outTime,
+      duration: payload.duration
     });
+    await fetch(SCRIPT_URL + '?' + params.toString());
 
     // Optimistic local update
     entries.push({
