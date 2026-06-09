@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA - File Outwork Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1f2e;
+    --ink-mid: #3d4663;
+    --ink-light: #8892ab;
+    --rule: #dde3f0;
+    --surface: #f7f9fc;
+    --white: #ffffff;
+    --accent: #1e5bcc;
+    --accent-light: #e8eeff;
+    --green: #0d7c4f;
+    --green-light: #e6f5ef;
+    --amber: #b85c00;
+    --amber-light: #fff4e6;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; font-size: 14px; }
+  .si { font-family: 'Noto Sans Sinhala', sans-serif; }
+
+  header {
+    background: var(--white);
+    border-bottom: 2px solid var(--accent);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+  .header-badge { background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; padding: 6px 12px; border-radius: 4px; }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+  header h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-light); font-family: 'Noto Sans Sinhala', sans-serif; }
+  .header-stats { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+  .sync-indicator { font-size: 11px; color: var(--ink-light); display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .sync-dot.online { background: var(--green); box-shadow: 0 0 0 2px var(--green-light); }
+  .sync-dot.syncing { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .stat-chip { text-align: center; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--rule); background: var(--surface); }
+  .stat-chip .num { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .stat-chip .lbl { font-size: 10px; color: var(--ink-light); font-family: 'Noto Sans Sinhala', sans-serif; }
+
+  .app { display: flex; height: calc(100vh - 61px); }
+
+  .form-panel { width: 400px; min-width: 360px; background: var(--white); border-right: 1px solid var(--rule); overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--ink-mid); text-transform: uppercase; letter-spacing: 0.8px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); font-family: 'Noto Sans Sinhala', sans-serif; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 12px; font-weight: 500; color: var(--ink-mid); display: flex; align-items: center; gap: 6px; }
+  label .req { color: var(--accent); font-size: 14px; line-height: 1; }
+
+  input[type="text"], input[type="date"], input[type="time"], select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: var(--radius);
+    font-size: 14px; font-family: 'Inter', sans-serif; color: var(--ink); background: var(--white);
+    transition: border-color 0.15s, box-shadow 0.15s; outline: none; -webkit-appearance: none; appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  input::placeholder { color: #bcc3d8; }
+
+  .datetime-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+  .time-toggle { height: 40px; padding: 0 10px; background: var(--surface); border: 1.5px solid var(--rule); border-radius: var(--radius); cursor: pointer; font-size: 18px; color: var(--ink-light); display: flex; align-items: center; transition: all 0.15s; }
+  .time-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .time-toggle.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .time-field { display: none; margin-top: 6px; }
+  .time-field.visible { display: flex; align-items: center; gap: 8px; }
+  .time-field input { flex: 1; }
+  .time-field span { font-size: 12px; color: var(--ink-light); white-space: nowrap; }
+
+  .duration-display { background: var(--green-light); border: 1.5px solid #a8e0c8; border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; gap: 12px; min-height: 54px; }
+  .duration-display .icon { font-size: 22px; }
+  .duration-display .dur-val { font-size: 22px; font-weight: 700; color: var(--green); line-height: 1; }
+  .duration-display .dur-lbl { font-size: 11px; color: #3d9c72; font-family: 'Noto Sans Sinhala', sans-serif; margin-top: 2px; }
+  .duration-display.empty { background: var(--surface); border-color: var(--rule); }
+  .duration-display.empty .dur-val { color: #bcc3d8; font-size: 14px; font-weight: 400; }
+  .duration-display.empty .icon { opacity: 0.3; }
+
+  .handover-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .handover-opt { padding: 8px 10px; border: 1.5px solid var(--rule); border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; background: var(--white); color: var(--ink-mid); user-select: none; }
+  .handover-opt:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .handover-opt.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .custom-handover { margin-top: 8px; }
+
+  .btn-add { width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; font-family: 'Noto Sans Sinhala', sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+  .btn-add:hover { background: #1649b0; }
+  .btn-add:active { transform: scale(0.98); }
+  .btn-add:disabled { background: #b0bdd8; cursor: not-allowed; }
+
+  .table-panel { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .table-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .toolbar-title { font-size: 13px; font-weight: 600; color: var(--ink-mid); font-family: 'Noto Sans Sinhala', sans-serif; }
+  .btn-export { margin-left: auto; padding: 7px 16px; background: var(--white); color: var(--ink-mid); border: 1.5px solid var(--rule); border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-reload { padding: 7px 16px; background: var(--white); color: var(--green); border: 1.5px solid var(--green-light); border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+  .btn-reload:hover { background: var(--green-light); }
+  .btn-reload.spinning span { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  .table-wrap { background: var(--white); border-radius: var(--radius); border: 1px solid var(--rule); overflow: hidden; box-shadow: var(--shadow-sm); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--ink); color: #fff; }
+  th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  td { padding: 11px 14px; vertical-align: middle; white-space: nowrap; }
+  td.file-no { font-size: 11px; font-family: 'Courier New', monospace; color: var(--ink-mid); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sn-cell { font-size: 12px; font-weight: 600; color: var(--ink-light); width: 40px; }
+  .badge-handover { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--accent-light); color: var(--accent); }
+  .dur-cell { font-weight: 600; color: var(--green); }
+  .dur-cell.pending { color: var(--amber); font-style: italic; font-weight: 400; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-light); }
+  .empty-state .empty-icon { font-size: 48px; opacity: 0.25; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; font-family: 'Noto Sans Sinhala', sans-serif; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: var(--radius); font-size: 13px; font-family: 'Noto Sans Sinhala', sans-serif; box-shadow: var(--shadow); transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 999; pointer-events: none; display: flex; align-items: center; gap: 10px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 4px solid #2ecc71; }
+  .toast.error { border-left: 4px solid var(--red); }
+  .toast.info { border-left: 4px solid var(--accent); }
+
+  @media (max-width: 760px) {
+    .app { flex-direction: column; height: auto; }
+    .form-panel { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--rule); }
+    .header-stats { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">ARIA</div>
+  <h1>
+    File Outwork Register
+    <small class="si">ෆයිල් ඉන්/අවුට් ලියාපදිංචිය</small>
+  </h1>
+  <div class="header-stats">
+    <div class="sync-indicator">
+      <div class="sync-dot online" id="syncDot"></div>
+      <span id="syncText" class="si">Google Sheets සමඟ සම්බන්ධ</span>
+    </div>
+    <div class="stat-chip">
+      <div class="num" id="stat-total">0</div>
+      <div class="lbl si">සම්පූර්ණ</div>
+    </div>
+    <div class="stat-chip">
+      <div class="num" id="stat-pending" style="color:var(--amber)">0</div>
+      <div class="lbl si">ලදි නැත</div>
+    </div>
+    <div class="stat-chip">
+      <div class="num" id="stat-returned" style="color:var(--green)">0</div>
+      <div class="lbl si">ලදි</div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- FORM PANEL -->
+  <div class="form-panel">
+    <div class="panel-title si">නව ෆයිල් ඇතුළත් කරන්න</div>
+
+    <div class="field-group">
+      <label><span class="si">අනු අංකය</span></label>
+      <input type="text" id="sn" readonly placeholder="ස්වයංක්‍රීයව" style="background:var(--surface);color:var(--ink-light)">
+    </div>
+
+    <div class="field-group">
+      <label><span class="req">✦</span><span class="si">ෆයිල් නම්බර</span></label>
+      <input type="text" id="fileNo" placeholder="SNA/APO/FO/ELE/2026/0001">
+    </div>
+
+    <div class="field-group">
+      <label><span class="req">✦</span><span class="si">ලැබුණු දිනය (IN DATE)</span></label>
+      <div class="datetime-row">
+        <input type="date" id="inDate" oninput="recalcDuration()">
+        <button class="time-toggle" id="inTimeToggle" onclick="toggleTime('in')" title="වේලාව">🕐</button>
+      </div>
+      <div class="time-field" id="inTimeField">
+        <input type="time" id="inTime" oninput="recalcDuration()">
+        <span class="si">වේලාව</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label><span class="si">භාර දීම (HAND OVER)</span></label>
+      <div class="handover-grid" id="handoverGrid">
+        <div class="handover-opt" onclick="selectHandover(this,'LE(P)')">LE(P)</div>
+        <div class="handover-opt" onclick="selectHandover(this,'SLE(U&SP)')">SLE(U&SP)</div>
+        <div class="handover-opt" onclick="selectHandover(this,'A/LE(F&W)')">A/LE(F&W)</div>
+        <div class="handover-opt" onclick="selectHandover(this,'SLE (E&T)')">SLE (E&T)</div>
+        <div class="handover-opt" onclick="selectHandover(this,'SLE (E&T)II')">SLE (E&T)II</div>
+        <div class="handover-opt" onclick="selectHandover(this,'custom')" id="customOpt">+ වෙනත්</div>
+      </div>
+      <div class="custom-handover" id="customHandoverField" style="display:none">
+        <input type="text" id="customHandoverInput" placeholder="Custom value...">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label><span class="si">ලදි දිනය (OUT DATE)</span> <span style="font-size:11px;color:var(--ink-light);font-weight:400">(ඔෆිස් ආවොත්)</span></label>
+      <div class="datetime-row">
+        <input type="date" id="outDate" oninput="recalcDuration()">
+        <button class="time-toggle" id="outTimeToggle" onclick="toggleTime('out')" title="වේලාව">🕐</button>
+      </div>
+      <div class="time-field" id="outTimeField">
+        <input type="time" id="outTime" oninput="recalcDuration()">
+        <span class="si">වේලාව</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label><span class="si">කාලය (DURATION)</span> <span style="font-size:11px;color:var(--accent);font-weight:400">— ස්වයංක්‍රීය</span></label>
+      <div class="duration-display empty" id="durationDisplay">
+        <span class="icon">📅</span>
+        <div>
+          <div class="dur-val si" id="durationVal">OUT DATE නොමැත</div>
+          <div class="dur-lbl" id="durationLbl"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add" id="addBtn" onclick="addEntry()">
+      <span>+</span><span>ෆයිල් ලියාපදිංචි කරන්න</span>
+    </button>
+  </div>
+
+  <!-- TABLE PANEL -->
+  <div class="table-panel">
+    <div class="table-toolbar">
+      <span class="toolbar-title si">ලියාපදිංචි ෆයිල් ලැයිස්තුව</span>
+      <button class="btn-reload" id="reloadBtn" onclick="loadFromSheet()">
+        <span id="reloadIcon">↻</span> <span class="si">Refresh</span>
+      </button>
+      <button class="btn-export" onclick="exportCSV()">⬇ CSV Export</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>S/N</th>
+            <th>FILE NO</th>
+            <th>IN DATE</th>
+            <th>HAND OVER</th>
+            <th>OUT DATE</th>
+            <th>DURATION</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr id="emptyRow">
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <p>Google Sheets වලින් load වෙමින්...</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCJz4TWJGTd92iq5ji_j91h3z1a48mHh4z4Un45LX4IuJ8Z2FBeI3ebZdo-ZnC0nSV/exec';
+
+let entries = [];
+let selectedHandover = '';
+
+// ── Init ──────────────────────────────────────
+function init() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inDate').value = today;
+  recalcDuration();
+  loadFromSheet();
+}
+
+// ── Load from Google Sheets ──────────────────────────────────────
+async function loadFromSheet() {
+  setSyncing(true);
+  const btn = document.getElementById('reloadBtn');
+  btn.classList.add('spinning');
+
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const json = await res.json();
+
+    if (json.status === 'success') {
+      entries = json.data.filter(r => r['S/N'] !== '' && r['S/N'] !== undefined && r['FILE NO'] !== '');
+      renderTable();
+      updateStats();
+      updateSN();
+      setSynced(true);
+    } else {
+      setSynced(false);
+      showToast('⚠ Sheet load error', 'error');
+    }
+  } catch(e) {
+    setSynced(false);
+    showToast('⚠ සම්බන්ධතා දෝෂයකි', 'error');
+  }
+
+  btn.classList.remove('spinning');
+}
+
+// ── Add entry ──────────────────────────────────────
+async function addEntry() {
+  const fileNo = document.getElementById('fileNo').value.trim();
+  const inDate = document.getElementById('inDate').value;
+  const inTime = document.getElementById('inTime').value;
+  const outDate = document.getElementById('outDate').value;
+  const outTime = document.getElementById('outTime').value;
+
+  let handover = selectedHandover;
+  if (document.getElementById('customOpt').classList.contains('selected')) {
+    handover = document.getElementById('customHandoverInput').value.trim();
+  }
+
+  if (!fileNo) { showToast('⚠ File No ඇතුළු කරන්න', 'error'); return; }
+  if (!inDate) { showToast('⚠ IN DATE ඇතුළු කරන්න', 'error'); return; }
+
+  const duration = outDate ? recalcDuration() : '';
+  if (duration === 'ERROR') { showToast('⚠ OUT DATE, IN DATE ට වඩා පෙර', 'error'); return; }
+
+  const btn = document.getElementById('addBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="si">Google Sheets වෙත Save කරමින්...</span>';
+  setSyncing(true);
+
+  const payload = {
+    sn: entries.length + 1,
+    fileNo,
+    inDate: formatDate(inDate),
+    inTime,
+    handover,
+    outDate: outDate ? formatDate(outDate) : '',
+    outTime,
+    duration
+  };
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    // Optimistic local update
+    entries.push({
+      'S/N': payload.sn,
+      'FILE NO': payload.fileNo,
+      'IN DATE': payload.inDate,
+      'IN TIME': payload.inTime,
+      'HAND OVER': payload.handover,
+      'OUT DATE': payload.outDate,
+      'OUT TIME': payload.outTime,
+      'DURATION': payload.duration
+    });
+
+    renderTable();
+    updateStats();
+    updateSN();
+    resetForm();
+    showToast('✓ Google Sheets වෙත Save විය!', 'success');
+    setSynced(true);
+
+    // Reload after 2s to confirm
+    setTimeout(loadFromSheet, 2000);
+
+  } catch(e) {
+    showToast('⚠ Save error — නැවත උත්සාහ කරන්න', 'error');
+    setSynced(false);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>+</span><span>ෆයිල් ලියාපදිංචි කරන්න</span>';
+}
+
+// ── Render table ──────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📂</div><p>ෆයිල් ලියාපදිංචි නොවේ.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = entries.map(e => `
+    <tr>
+      <td class="sn-cell">${String(e['S/N']).padStart(2,'0')}</td>
+      <td class="file-no" title="${e['FILE NO']}">${e['FILE NO']}</td>
+      <td>${e['IN DATE']}${e['IN TIME'] ? '<br><small style="color:var(--ink-light)">'+e['IN TIME']+'</small>' : ''}</td>
+      <td><span class="badge-handover">${e['HAND OVER'] || '—'}</span></td>
+      <td>${e['OUT DATE'] ? (e['OUT DATE'] + (e['OUT TIME'] ? '<br><small style="color:var(--ink-light)">'+e['OUT TIME']+'</small>' : '')) : '<span style="color:#fff;background:var(--amber);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">ලදි නැත</span>'}</td>
+      <td class="dur-cell ${e['DURATION'] ? '' : 'pending'}">${e['DURATION'] || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Duration ──────────────────────────────────────
+function recalcDuration() {
+  const inD = document.getElementById('inDate').value;
+  const outD = document.getElementById('outDate').value;
+  const inT = document.getElementById('inTime').value;
+  const outT = document.getElementById('outTime').value;
+  const box = document.getElementById('durationDisplay');
+  const val = document.getElementById('durationVal');
+  const lbl = document.getElementById('durationLbl');
+
+  if (!inD || !outD) {
+    box.className = 'duration-display empty';
+    box.style.background = ''; box.style.borderColor = '';
+    val.style.color = '';
+    val.textContent = !inD ? 'IN DATE ඇතුළු කරන්න' : 'OUT DATE නොමැත';
+    lbl.textContent = '';
+    return '';
+  }
+
+  const inDT = inT ? new Date(inD+'T'+inT) : new Date(inD+'T00:00:00');
+  const outDT = outT ? new Date(outD+'T'+outT) : new Date(outD+'T00:00:00');
+  const diffMs = outDT - inDT;
+
+  if (diffMs < 0) {
+    box.className = 'duration-display';
+    box.style.background = 'var(--red-light)'; box.style.borderColor = '#f0c0bb';
+    val.style.color = 'var(--red)';
+    val.textContent = '⚠ OUT DATE < IN DATE';
+    lbl.textContent = '';
+    return 'ERROR';
+  }
+
+  box.className = 'duration-display';
+  box.style.background = ''; box.style.borderColor = ''; val.style.color = '';
+
+  const totalDays = Math.floor(diffMs / 86400000);
+  const remH = Math.floor((diffMs % 86400000) / 3600000);
+  const remM = Math.floor((diffMs % 3600000) / 60000);
+
+  let dStr = '', lblStr = '';
+  if (inT || outT) {
+    dStr = totalDays > 0 ? `${totalDays}d ${remH}h ${remM}m` : `${remH}h ${remM}m`;
+    lblStr = totalDays > 0 ? `දින ${totalDays}, පැය ${remH}, මිනිත්තු ${remM}` : `පැය ${remH}, මිනිත්තු ${remM}`;
+  } else {
+    dStr = `${totalDays} days`;
+    lblStr = `දින ${totalDays}`;
+  }
+
+  val.textContent = dStr;
+  lbl.textContent = lblStr;
+  return dStr;
+}
+
+// ── Toggle time ──────────────────────────────────────
+function toggleTime(w) {
+  const f = document.getElementById(w+'TimeField');
+  const t = document.getElementById(w+'TimeToggle');
+  f.classList.toggle('visible');
+  t.classList.toggle('active');
+  if (!f.classList.contains('visible')) {
+    document.getElementById(w+'Time').value = '';
+    recalcDuration();
+  }
+}
+
+// ── Handover ──────────────────────────────────────
+function selectHandover(el, val) {
+  document.querySelectorAll('.handover-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const cf = document.getElementById('customHandoverField');
+  if (val === 'custom') { cf.style.display = 'block'; selectedHandover = ''; document.getElementById('customHandoverInput').focus(); }
+  else { cf.style.display = 'none'; selectedHandover = val; }
+}
+
+// ── Sync indicators ──────────────────────────────────────
+function setSyncing(v) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if (v) { dot.className = 'sync-dot syncing'; txt.textContent = 'Syncing...'; }
+}
+function setSynced(ok) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if (ok) { dot.className = 'sync-dot online'; txt.textContent = 'Google Sheets සමඟ සම්බන්ධ'; }
+  else { dot.className = 'sync-dot'; dot.style.background = 'var(--red)'; txt.textContent = 'සම්බන්ධතාව අසාර්ථකයි'; }
+}
+
+// ── Stats / SN ──────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-total').textContent = entries.length;
+  document.getElementById('stat-pending').textContent = entries.filter(e => !e['OUT DATE']).length;
+  document.getElementById('stat-returned').textContent = entries.filter(e => e['OUT DATE']).length;
+}
+function updateSN() {
+  document.getElementById('sn').value = String(entries.length + 1).padStart(2,'0');
+}
+
+// ── Format date ──────────────────────────────────────
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return y+'.'+m+'.'+day;
+}
+
+// ── Reset ──────────────────────────────────────
+function resetForm() {
+  document.getElementById('fileNo').value = '';
+  document.getElementById('inDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('inTime').value = '';
+  document.getElementById('outDate').value = '';
+  document.getElementById('outTime').value = '';
+  ['in','out'].forEach(w => {
+    document.getElementById(w+'TimeField').classList.remove('visible');
+    document.getElementById(w+'TimeToggle').classList.remove('active');
+  });
+  document.querySelectorAll('.handover-opt').forEach(o => o.classList.remove('selected'));
+  document.getElementById('customHandoverField').style.display = 'none';
+  document.getElementById('customHandoverInput').value = '';
+  selectedHandover = '';
+  recalcDuration();
+  updateSN();
+}
+
+// ── Export CSV ──────────────────────────────────────
+function exportCSV() {
+  const h = ['S/N','FILE NO','IN DATE','IN TIME','HAND OVER','OUT DATE','OUT TIME','DURATION'];
+  const rows = entries.map(e => h.map(k => `"${e[k]||''}"`).join(','));
+  const csv = [h.map(x=>`"${x}"`).join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = 'ARIA_FileRegister_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  showToast('⬇ CSV Download කරයි', 'success');
+}
+
+// ── Toast ──────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast '+type+' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
